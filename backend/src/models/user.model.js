@@ -1,69 +1,39 @@
 import mongoose from "mongoose";
 
-const playerSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
-
-  name: String,
-
-  socketId: String,
-
-  balance: {
-    type: Number,
-    default: 0,
-    min: 0,
-  },
-
-  creditUsed: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 10000,
-  },
-
-  isBanker: {
-    type: Boolean,
-    default: false,
-  },
-});
-
-const roomSchema = new mongoose.Schema(
+const user = new mongoose.Schema(
   {
-    roomId: {
+    fullname: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    username: {
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
+      trim: true,
     },
 
-    players: [playerSchema], 
-    hostId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
     },
 
-    bankerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+    profilePic: {
+      type: String,
+      default: "",
     },
 
-    isBankerAlsoPlayer: {
-      type: Boolean,
-      default: true,
-    },
-
-    initialAmount: {
-      type: Number,
-      default: 0,
-    },
-
-    gameStarted: {
+    // optional but useful later
+    isOnline: {
       type: Boolean,
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export default mongoose.model("Room", roomSchema);
+export default mongoose.model("User", user);
