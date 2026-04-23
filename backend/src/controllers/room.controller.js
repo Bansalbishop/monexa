@@ -128,8 +128,6 @@ export const getRoomController = async (req, res) => {
     const populatedRoom = await roomModel
       .findOne({ roomId: id })
       .populate("players.userId", "fullname profilePic");
-
-    io.to(roomId).emit("room_updated", populatedRoom);
     res.status(200).json({ room: populatedRoom });
   } catch (error) {
     console.error("Error in get room", error);
