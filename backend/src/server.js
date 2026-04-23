@@ -15,13 +15,13 @@ const app = express();
 const server = http.createServer(app);
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.CLIENT_URL,
     credentials: true,
   }),
 );
 
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173", credentials: true },
+  cors: { origin: process.env.CLIENT_URL, credentials: true },
 });
 
 export { io };
@@ -47,10 +47,12 @@ io.on("connection", (socket) => {
       // Update socketId in DB (Mongoose auto-casts userId string to ObjectId)
       const result = await roomModel.updateOne(
         { roomId, "players.userId": userId },
-        { $set: { "players.$.socketId": socket.id } }
+        { $set: { "players.$.socketId": socket.id } },
       );
 
-      console.log(`join_room: user=${userId} room=${roomId} socket=${socket.id} matched=${result.modifiedCount}`);
+      console.log(
+        `join_room: user=${userId} room=${roomId} socket=${socket.id} matched=${result.modifiedCount}`,
+      );
 
       // Get player name for notification
       const room = await roomModel
@@ -59,7 +61,7 @@ io.on("connection", (socket) => {
 
       if (room) {
         const player = room.players.find(
-          (p) => p.userId?._id?.toString() === userId
+          (p) => p.userId?._id?.toString() === userId,
         );
         if (player) {
           socket.to(roomId).emit("player_joined", {
@@ -92,7 +94,7 @@ io.on("connection", (socket) => {
 
       // Find player by userId (reliable) instead of socketId (fragile)
       const disconnectedPlayer = room.players.find(
-        (p) => p.userId.toString() === userId
+        (p) => p.userId.toString() === userId,
       );
 
       if (!disconnectedPlayer) {
@@ -103,9 +105,7 @@ io.on("connection", (socket) => {
       const disconnectedName = disconnectedPlayer.name || "A player";
 
       // Remove player by userId
-      room.players = room.players.filter(
-        (p) => p.userId.toString() !== userId
-      );
+      room.players = room.players.filter((p) => p.userId.toString() !== userId);
 
       // If room is now empty, delete it
       if (room.players.length === 0) {
@@ -138,7 +138,9 @@ io.on("connection", (socket) => {
         name: disconnectedName,
       });
 
-      console.log(`disconnect: ${disconnectedName} removed from room ${roomId}, ${room.players.length} players left`);
+      console.log(
+        `disconnect: ${disconnectedName} removed from room ${roomId}, ${room.players.length} players left`,
+      );
     } catch (error) {
       console.error("Error in disconnect socket", error);
     }
