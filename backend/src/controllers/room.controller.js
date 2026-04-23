@@ -94,7 +94,12 @@ export const joinRoomController = async (req, res) => {
     room.players.push(newPlayer);
 
     await room.save();
-    io.to(roomId).emit("room_updated", room);
+
+    const populatedRoom = await roomModel
+      .findOne({ roomId })
+      .populate("players.userId", "fullname profilePic");
+
+    io.to(roomId).emit("room_updated", populatedRoom);
 
     res.status(200).json({
       message: "Joined room",
@@ -170,8 +175,12 @@ export const startGameController = async (req, res) => {
 
     await room.save();
 
-    // consistent event
-    io.to(id).emit("room_updated", room);
+    const populatedRoom = await roomModel
+      .findOne({ roomId: room.roomId })
+      .populate("players.userId", "fullname profilePic");
+
+    io.to(room.roomId).emit("room_updated", populatedRoom);
+    io.to(room.roomId).emit("game_started", populatedRoom);
 
     return res.status(200).json({
       message: "Game started",
@@ -227,10 +236,13 @@ export const transferController = async (req, res) => {
       receiverId: receiver.userId,
       amount,
     });
-
     await room.save();
 
-    io.to(id).emit("room_updated", room);
+    const populatedRoom = await roomModel
+      .findOne({ roomId: id })
+      .populate("players.userId", "fullname profilePic");
+
+    io.to(id).emit("room_updated", populatedRoom);
 
     return res.status(200).json({
       message: "Transfer successful",
@@ -296,7 +308,11 @@ export const transferAllController = async (req, res) => {
 
     await room.save();
 
-    io.to(id).emit("room_updated", room);
+    const populatedRoom = await roomModel
+      .findOne({ roomId: id })
+      .populate("players.userId", "fullname profilePic");
+
+    io.to(id).emit("room_updated", populatedRoom);
 
     return res.status(200).json({
       message: "Transfer to all successful",
@@ -350,7 +366,11 @@ export const payCreditController = async (req, res) => {
 
     await room.save();
 
-    io.to(id).emit("room_updated", room);
+    const populatedRoom = await roomModel
+      .findOne({ roomId: id })
+      .populate("players.userId", "fullname profilePic");
+
+    io.to(id).emit("room_updated", populatedRoom);
 
     return res.status(200).json({
       message: "Credit repaid successfully",
@@ -398,7 +418,11 @@ export const useCreditController = async (req, res) => {
 
     await room.save();
 
-    io.to(id).emit("room_updated", room);
+    const populatedRoom = await roomModel
+      .findOne({ roomId: id })
+      .populate("players.userId", "fullname profilePic");
+
+    io.to(id).emit("room_updated", populatedRoom);
 
     return res.status(200).json({
       message: "Credit Used successfully",
@@ -471,8 +495,11 @@ export const bankTransferController = async (req, res) => {
 
     await room.save();
 
-    io.to(id).emit("room_updated", room);
+    const populatedRoom = await roomModel
+      .findOne({ roomId: id })
+      .populate("players.userId", "fullname profilePic");
 
+    io.to(id).emit("room_updated", populatedRoom);
     return res.status(200).json({
       message: "Bank transfer successful",
       room,

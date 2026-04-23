@@ -4,36 +4,60 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useRoomStore } from "../stores/useRoomStore";
 import { useAuthStore } from "../stores/useAuthStore";
 import { socket } from "../lib/socket";
-import { Check, Cross, Loader, X } from "lucide-react";
-import { axiosInstance } from "../lib/axios";
+import { Check, Loader, X } from "lucide-react";
+import toast from "react-hot-toast";
+
 const RoomPage = () => {
   const { id } = useParams();
-  const [initialAmount, setInitialAmount] = useState();
-  const [bankBalance, setBankBalance] = useState();
+  const [initialAmount, setInitialAmount] = useState("");
+  const [bankBalance, setBankBalance] = useState("");
   const [isPlayer, setIsPlayer] = useState(true);
   const navigate = useNavigate();
 
   const { room, getRoom, startGame, listenToRoom, stopListening, isLoading } =
     useRoomStore();
   const { authUser } = useAuthStore();
-  useEffect(() => {
-    socket.on("game_started", (updatedRoom) => {
-      navigate(`/game/${updatedRoom.roomId}`);
-    });
 
-    return () => socket.off("game_started");
-  }, []);
+  // Join the socket room
+  useEffect(() => {
+    if (!authUser || !id) return;
+
+    socket.emit("join_room", {
+      roomId: id,
+      userId: authUser._id,
+    });
+  }, [id, authUser]);
+
+  // Listen for game_started — navigates ALL players (including host)
+  useEffect(() => {
+    const handleGameStarted = (updatedRoom) => {
+      toast.success("🎮 Game is starting!", { duration: 2000 });
+      navigate(`/room/${updatedRoom.roomId}/start`);
+    };
+
+    socket.on("game_started", handleGameStarted);
+
+    return () => socket.off("game_started", handleGameStarted);
+  }, [navigate]);
+
+  // Fetch room data and listen for updates
   useEffect(() => {
     getRoom(id);
     listenToRoom();
 
     return () => stopListening();
   }, [id]);
+
   const handleStartGame = async (e) => {
     e.preventDefault();
 
     if (!initialAmount || !bankBalance) {
-      alert("Enter all values");
+      toast.error("Please enter all values");
+      return;
+    }
+
+    if (Number(initialAmount) <= 0 || Number(bankBalance) <= 0) {
+      toast.error("Values must be greater than 0");
       return;
     }
 
@@ -43,8 +67,9 @@ const RoomPage = () => {
       bankBalance: Number(bankBalance),
       isBankerAlsoPlayer: isPlayer,
     });
-    navigate(`/room/${room.roomId}/start`);
+    // Navigation is handled by the game_started socket event
   };
+
   if (!room) {
     return (
       <div className="w-full min-h-[calc(100vh-64px)] bg-[#0F172A] flex items-center justify-center px-4 text-white">
@@ -65,11 +90,11 @@ const RoomPage = () => {
         {room.players.map((p) => (
           <div key={p.userId?._id} className="flex flex-col items-center">
             <img
-              src={p.userId.profilePic}
+              src={p.userId?.profilePic}
               className="size-23 rounded-full object-cover"
             />
             <span className="font-heading text-white mt-2">
-              {p.userId.fullname}
+              {p.userId?.fullname}
             </span>
           </div>
         ))}
@@ -122,7 +147,7 @@ const RoomPage = () => {
               {isLoading ? (
                 <div className="flex  items-center justify-center gap-10">
                   <Loader className="animate-spin size-5 text-white" />
-                  <p>Joining...</p>
+                  <p>Starting...</p>
                 </div>
               ) : (
                 "Start Game"

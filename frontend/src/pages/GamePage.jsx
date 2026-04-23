@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useRoomStore } from "../stores/useRoomStore";
 import { useAuthStore } from "../stores/useAuthStore";
 import { Bell, Loader, Send, X } from "lucide-react";
 import { useMemo } from "react";
+import { socket } from "../lib/socket.js";
+import toast from "react-hot-toast";
 
 const GamePage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const {
     room,
@@ -21,14 +24,14 @@ const GamePage = () => {
     stopListening,
   } = useRoomStore();
   const players = room?.players || [];
-  const getName = (id) => {
-    if (!id) return "Bank";
-    const player = room.players.find(
-      (p) => p.userId._id.toString() === id?.toString(),
+  const getName = (playerId) => {
+    if (!playerId) return "Bank";
+    const player = room?.players?.find(
+      (p) => p.userId?._id?.toString() === playerId?.toString(),
     );
-    return player?.userId?.fullname || "Bank";
+    return player?.userId?.fullname || "Unknown";
   };
-  const [amount, setAmount] = useState();
+  const [amount, setAmount] = useState("");
   const [playerMode, setPlayerMode] = useState(true);
 
   const generateCardNumber = () => {
@@ -38,7 +41,6 @@ const GamePage = () => {
   };
 
   const cardNumber = useMemo(() => generateCardNumber(), []);
-  // "player" | "bank"
   const { authUser } = useAuthStore();
   const isHost = room?.hostId?.toString() === authUser._id?.toString();
   const [select, setSelect] = useState(null);
@@ -46,6 +48,17 @@ const GamePage = () => {
   const thisPlayer = room?.players?.find(
     (p) => p.userId?._id?.toString() === authUser._id?.toString(),
   );
+
+  // Join socket room and listen for updates
+  useEffect(() => {
+    if (!authUser || !id) return;
+
+    socket.emit("join_room", {
+      roomId: id,
+      userId: authUser._id,
+    });
+  }, [id, authUser]);
+
   useEffect(() => {
     getRoom(id);
     listenToRoom();
@@ -53,16 +66,28 @@ const GamePage = () => {
     return () => stopListening();
   }, [id]);
 
+  // If room gets deleted or player is kicked
+  useEffect(() => {
+    const handleDisconnectFromRoom = () => {
+      toast.error("You've been disconnected from the room");
+      navigate("/");
+    };
+
+    socket.on("room_deleted", handleDisconnectFromRoom);
+
+    return () => socket.off("room_deleted", handleDisconnectFromRoom);
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!amount || amount <= 0) {
-      alert("Enter valid amount");
+    if (!amount || Number(amount) <= 0) {
+      toast.error("Enter a valid amount");
       return;
     }
 
     if (!select) {
-      alert("Select a target");
+      toast.error("Select a recipient first");
       return;
     }
 
@@ -109,6 +134,7 @@ const GamePage = () => {
       console.error(err);
     }
   };
+
   if (!room) {
     return (
       <div className="w-full min-h-[calc(100vh-64px)] bg-[#0F172A] flex items-center justify-center px-4 text-white">
@@ -116,6 +142,7 @@ const GamePage = () => {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen relative bg-[#0F172A] text-white flex flex-col px-4 items-center">
       <div className="flex flex-col items-center gap-5">
@@ -150,7 +177,7 @@ const GamePage = () => {
           <div className="bg-[#1E293B] p-6 rounded-xl w-[400px] flex justify-between px-10 ">
             <h2 className="font-heading ">Total Amount:</h2>
             <p className="font-retro text-green-400">
-              $ {playerMode ? thisPlayer.balance : room.bankBalance}
+              $ {playerMode ? thisPlayer?.balance : room.bankBalance}
             </p>
           </div>
 
@@ -176,16 +203,16 @@ const GamePage = () => {
               {/* Bottom Row */}
               <div className="mt-6 flex justify-between items-center text-white">
                 <div>
-                  <p className="text-xs opacity-70">Card Holder</p>
+                  <p className="text-xs opacity-70">Room ID</p>
                   <p className="font-semibold">
-                    {thisPlayer?.userId?.fullname}
+                    {room.roomId}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs opacity-70">Balance</p>
                   <p className="font-semibold text-red-600">
-                    ${thisPlayer.creditUsed}
+                    ${thisPlayer?.creditUsed}
                   </p>
                 </div>
               </div>
@@ -198,7 +225,7 @@ const GamePage = () => {
         {playerMode && (
           <>
             <div
-              onClick={() => setSelect("bank")}
+              onClick={() => setSelect("tobank")}
               className={`flex ${select === "tobank" ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
             >
               <img
@@ -257,9 +284,9 @@ const GamePage = () => {
               >
                 <img
                   className="rounded-full size-20"
-                  src={p.userId.profilePic}
+                  src={p.userId?.profilePic || "/avatar.png"}
                 ></img>
-                <p className="font-heading">{p.userId.fullname}</p>
+                <p className="font-heading">{p.userId?.fullname}</p>
               </div>
             ))}
       </div>
@@ -284,43 +311,47 @@ const GamePage = () => {
           <div className="bg-[#1E293B] p-6 rounded-xl w-[400px]">
             <div className="flex justify-between">
               <h2 className="font-retro">Transactions</h2>
-              <X onClick={() => setOpen(false)} className="text-red-500" />
+              <X onClick={() => setOpen(false)} className="text-red-500 cursor-pointer" />
             </div>
-            {[...room.transactions].reverse().map((t) => {
-              const isSender =
-                t.senderId?.toString() === authUser._id?.toString();
+            {room.transactions.length === 0 ? (
+              <p className="text-gray-400 text-center py-6">No transactions yet</p>
+            ) : (
+              [...room.transactions].reverse().map((t) => {
+                const isSender =
+                  t.senderId?.toString() === authUser._id?.toString();
 
-              const isReceiver =
-                t.receiverId?.toString() === authUser._id?.toString();
+                const isReceiver =
+                  t.receiverId?.toString() === authUser._id?.toString();
 
-              let bgClass = "bg-gray-700/40"; // default
+                let bgClass = "bg-gray-700/40"; // default
 
-              if (isSender) bgClass = "bg-red-500/20";
-              else if (isReceiver) bgClass = "bg-green-500/20";
+                if (isSender) bgClass = "bg-red-500/20";
+                else if (isReceiver) bgClass = "bg-green-500/20";
 
-              return (
-                <div
-                  key={t._id}
-                  className={`px-4 py-2 rounded-lg ${bgClass} flex justify-between items-center my-3`}
-                >
-                  <span className="text-sm text-white">
-                    {getName(t.senderId)} → {getName(t.receiverId)}
-                  </span>
-
-                  <span
-                    className={`font-semibold ${
-                      isSender
-                        ? "text-red-400"
-                        : isReceiver
-                          ? "text-green-400"
-                          : "text-gray-300"
-                    }`}
+                return (
+                  <div
+                    key={t._id}
+                    className={`px-4 py-2 rounded-lg ${bgClass} flex justify-between items-center my-3`}
                   >
-                    ₹{t.amount}
-                  </span>
-                </div>
-              );
-            })}
+                    <span className="text-sm text-white">
+                      {getName(t.senderId)} → {getName(t.receiverId)}
+                    </span>
+
+                    <span
+                      className={`font-semibold ${
+                        isSender
+                          ? "text-red-400"
+                          : isReceiver
+                            ? "text-green-400"
+                            : "text-gray-300"
+                      }`}
+                    >
+                      ₹{t.amount}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}
