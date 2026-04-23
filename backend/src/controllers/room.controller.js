@@ -36,6 +36,7 @@ export const createRoomController = async (req, res) => {
     const room = await roomModel.create({
       roomId,
       hostId: user._id,
+      bankBalance: 0,
       bankerId: user._id,
       players: [player],
       gameStarted: false,
@@ -109,8 +110,9 @@ export const getRoomController = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const room = await roomModel.findOne({ roomId: id });
-
+    const room = await roomModel
+      .findOne({ roomId: id })
+      .populate("players.userId", "fullname profilePic");
     if (!room) {
       return res.status(404).json({ message: "Room not found" });
     }
@@ -125,12 +127,17 @@ export const getRoomController = async (req, res) => {
 export const startGameController = async (req, res) => {
   try {
     const { id } = req.params;
-    const { initialAmount, isBankerAlsoPlayer } = req.body;
+    const { initialAmount, isBankerAlsoPlayer, bankBalance } = req.body;
 
     // validation
-    if (!initialAmount || initialAmount <= 0) {
+    if (
+      !initialAmount ||
+      !bankBalance ||
+      bankBalance <= 0 ||
+      initialAmount <= 0
+    ) {
       return res.status(400).json({
-        message: "Initial amount must be greater than 0",
+        message: "Invalid details",
       });
     }
 
@@ -139,7 +146,9 @@ export const startGameController = async (req, res) => {
     if (!room) {
       return res.status(404).json({ message: "Room does not exist" });
     }
-
+    if (room.gameStarted) {
+      return res.status(400).json({ message: "Game already started" });
+    }
     // only host can start
     if (room.hostId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
@@ -151,6 +160,7 @@ export const startGameController = async (req, res) => {
     room.initialAmount = initialAmount;
     room.gameStarted = true;
     room.isBankerAlsoPlayer = isBankerAlsoPlayer;
+    room.bankBalance = bankBalance;
 
     // distribute money
     room.players.forEach((p) => {
@@ -396,6 +406,79 @@ export const useCreditController = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in useCredit Controller", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const bankTransferController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { from, to, amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Invalid amount" });
+    }
+
+    const room = await roomModel.findOne({ roomId: id });
+
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    // 🏦 BANK → PLAYER
+    if (from === "bank") {
+      const receiver = room.players.find((p) => p.userId.toString() === to);
+
+      if (!receiver) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+
+      if (room.bankBalance < amount) {
+        return res.status(400).json({ message: "Insufficient bank balance" });
+      }
+
+      room.bankBalance -= amount;
+      receiver.balance += amount;
+
+      room.transactions.push({
+        senderId: null, // BANK
+        receiverId: receiver.userId,
+        amount,
+      });
+    }
+
+    // 👤 PLAYER → BANK
+    else if (to === "bank") {
+      const sender = room.players.find((p) => p.userId.toString() === from);
+
+      if (!sender) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+
+      if (sender.balance < amount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      sender.balance -= amount;
+      room.bankBalance += amount;
+
+      room.transactions.push({
+        senderId: sender.userId,
+        receiverId: null, // BANK
+        amount,
+      });
+    }
+
+    await room.save();
+
+    io.to(id).emit("room_updated", room);
+
+    return res.status(200).json({
+      message: "Bank transfer successful",
+      room,
+    });
+  } catch (error) {
+    console.error("Error in bankTransferController", error);
     return res.status(500).json({ message: "Server error" });
   }
 };

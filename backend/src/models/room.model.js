@@ -68,6 +68,11 @@ const roomSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    bankBalance:{
+      type:Number,
+      required:true,
+      min:0,
+    },
 
     isBankerAlsoPlayer: {
       type: Boolean,

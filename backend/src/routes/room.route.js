@@ -1,6 +1,7 @@
 import express from "express";
 import { protectRoute } from "../middlewares/auth.middleware.js";
 import {
+  bankTransferController,
   createRoomController,
   getRoomController,
   joinRoomController,
@@ -22,5 +23,6 @@ router.post("/:id/transfer", protectRoute, transferController);
 router.post("/:id/transferall", protectRoute, transferAllController);
 router.post("/:id/paycredit", protectRoute, payCreditController);
 router.post("/:id/usecredit", protectRoute, useCreditController);
+router.post("/:id/banktransfer", protectRoute, bankTransferController);
 
 export default router;

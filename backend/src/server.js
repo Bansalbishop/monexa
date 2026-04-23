@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import http from "http"; // ✅ REQUIRED
 import { Server } from "socket.io";
-
+import cors from "cors";
 import connectDB from "./lib/db.js";
 import authRoutes from "./routes/auth.route.js";
 import roomRoutes from "./routes/room.route.js";
@@ -13,10 +13,15 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app); // ✅ create HTTP server
-
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 // ✅ attach socket to server
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: { origin: "http://localhost:5173", credentials: true },
 });
 
 export { io };
