@@ -154,8 +154,8 @@ const GamePage = () => {
   }
 
   return (
-    <div className="min-h-screen relative bg-[#0F172A] text-white flex flex-col px-4 items-center">
-      <div className="flex flex-col items-center gap-5">
+    <div className="min-h-[calc(100vh-64px)] relative bg-[#0F172A] text-white flex flex-col md:flex-row px-4 items-center md:items-start md:justify-evenly">
+      <div className="flex flex-col md:gap-10 justify-center items-center gap-5">
         <div className="flex gap-5">
           {isHost && (
             <button
@@ -183,8 +183,8 @@ const GamePage = () => {
             <Bell />
           </button>
         </div>
-        <div className="flex flex-col gap-2">
-          <div className="bg-[#1E293B] p-6 rounded-xl w-[400px] flex justify-between px-10 ">
+        <div className="flex flex-col gap-2  md:gap-12 items-center">
+          <div className="bg-[#1E293B] py-6 rounded-xl w-[300px] sm:w-[330px] md:w-[400px] flex justify-between px-10 ">
             <h2 className="font-heading ">Total Amount:</h2>
             <p className="font-retro text-green-400">
               $ {playerMode ? thisPlayer?.balance : room.bankBalance}
@@ -194,7 +194,7 @@ const GamePage = () => {
           {playerMode && (
             <div
               onClick={() => setSelect("takefromcard")}
-              className={`w-[400px] h-44 rounded-2xl p-5 cursor-pointer transition-all duration-300 
+              className={`w-[300px] sm:w-[330px] md:w-[400px] h-44 rounded-2xl p-5 cursor-pointer transition-all duration-300 
         bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400
         shadow-lg ${select === "takefromcard" ? "scale-105 shadow-2xl" : ""}
       `}
@@ -220,7 +220,7 @@ const GamePage = () => {
                 <div>
                   <p className="text-xs opacity-70">Balance</p>
                   <p className="font-semibold text-red-600">
-                    ${thisPlayer?.creditUsed}
+                    ${10000 - thisPlayer?.creditUsed}
                   </p>
                 </div>
               </div>
@@ -228,92 +228,92 @@ const GamePage = () => {
           )}
         </div>
       </div>
+      <div className="flex flex-col items-center justify-between ">
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6 md:gap-10 max-h-[65vw] scrollbar-hide overflow-y-scroll mt-10">
+          {playerMode && (
+            <>
+              <div
+                onClick={() => setSelect("tobank")}
+                className={`flex ${select === "tobank" ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
+              >
+                <img
+                  className="rounded-full size-15 md:size-20"
+                  src="https://imgs.search.brave.com/VmzZRq09grUtUtHTXb_o5bNU8GZdLcivmP-q8c4RQWM/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMTEv/MjA1LzkwMC9zbWFs/bC95ZWxsb3ctYmFu/ay13aXRoLXJlZC1y/b29mLWJ1aWxkaW5n/LXdpdGgtY29sdW1u/cy1vbi15ZWxsb3ct/YmFja2dyb3VuZC1p/c29tZXRyaWMtdmll/dy0zZC1yZW5kZXJp/bmctcGhvdG8uanBn"
+                ></img>
+                <p className="font-heading">Bank</p>
+              </div>
+              <div
+                onClick={() => setSelect("givetocard")}
+                className={`flex ${select === "givetocard" ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
+              >
+                <img
+                  className="rounded-full size-15 md:size-20"
+                  src="https://imgs.search.brave.com/MgIg8j43d9BiHGE-Ycyc6MemZlseaqAMt_RD2a1FCYA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWcu/ZnJlZXBpay5jb20v/ZnJlZS1wc2QvM2Qt/Y2FydG9vbi1jcmVk/aXQtY2FyZC1yZWNl/aXB0Xzg0NDQzLTU2/ODE1LmpwZz9zZW10/PWFpc19oeWJyaWQm/dz03NDAmcT04MA"
+                ></img>
+                <p className="font-heading">Card</p>
+              </div>
+              <div
+                onClick={() => setSelect("all")}
+                className={`flex ${select === "all" ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
+              >
+                <img
+                  className="rounded-full size-15 md:size-20"
+                  src="https://imgs.search.brave.com/nRfNicAdT2sNjRhgB06cyr_64uL-u6YA8g9SHQle7FU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/cGl4YWJheS5jb20v/cGhvdG8vMjAxNy8x/MS8xMC8wNS80Ni9n/cm91cC0yOTM1NTIx/XzY0MC5wbmc"
+                ></img>
+                <p className="font-heading">All</p>
+              </div>
+            </>
+          )}
 
-      <div className="grid grid-cols-3 md:grid-cols-5 gap-10 max-h-[65vw] scrollbar-hide overflow-y-scroll mt-10">
-        {playerMode && (
-          <>
-            <div
-              onClick={() => setSelect("tobank")}
-              className={`flex ${select === "tobank" ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
-            >
-              <img
-                className="rounded-full size-20"
-                src="https://imgs.search.brave.com/VmzZRq09grUtUtHTXb_o5bNU8GZdLcivmP-q8c4RQWM/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMTEv/MjA1LzkwMC9zbWFs/bC95ZWxsb3ctYmFu/ay13aXRoLXJlZC1y/b29mLWJ1aWxkaW5n/LXdpdGgtY29sdW1u/cy1vbi15ZWxsb3ct/YmFja2dyb3VuZC1p/c29tZXRyaWMtdmll/dy0zZC1yZW5kZXJp/bmctcGhvdG8uanBn"
-              ></img>
-              <p className="font-heading">Bank</p>
-            </div>
-            <div
-              onClick={() => setSelect("givetocard")}
-              className={`flex ${select === "givetocard" ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
-            >
-              <img
-                className="rounded-full size-20"
-                src="https://imgs.search.brave.com/MgIg8j43d9BiHGE-Ycyc6MemZlseaqAMt_RD2a1FCYA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWcu/ZnJlZXBpay5jb20v/ZnJlZS1wc2QvM2Qt/Y2FydG9vbi1jcmVk/aXQtY2FyZC1yZWNl/aXB0Xzg0NDQzLTU2/ODE1LmpwZz9zZW10/PWFpc19oeWJyaWQm/dz03NDAmcT04MA"
-              ></img>
-              <p className="font-heading">Card</p>
-            </div>
-            <div
-              onClick={() => setSelect("all")}
-              className={`flex ${select === "all" ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
-            >
-              <img
-                className="rounded-full size-20"
-                src="https://imgs.search.brave.com/nRfNicAdT2sNjRhgB06cyr_64uL-u6YA8g9SHQle7FU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/cGl4YWJheS5jb20v/cGhvdG8vMjAxNy8x/MS8xMC8wNS80Ni9n/cm91cC0yOTM1NTIx/XzY0MC5wbmc"
-              ></img>
-              <p className="font-heading">All</p>
-            </div>
-          </>
-        )}
+          {playerMode
+            ? players.map((p) => {
+                if (p.userId?._id?.toString() === authUser._id?.toString())
+                  return null;
 
-        {playerMode
-          ? players.map((p) => {
-              if (p.userId?._id?.toString() === authUser._id?.toString())
-                return null;
-
-              return (
+                return (
+                  <div
+                    onClick={() => setSelect(p.userId._id)}
+                    key={p.userId._id}
+                    className={`flex ${select === p.userId._id ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
+                  >
+                    <img
+                      className="rounded-full size-15 md:size-20 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all duration-200"
+                      src={p.userId?.profilePic || "/avatar.png"}
+                    />
+                    <p>{p.userId?.fullname}</p>
+                  </div>
+                );
+              })
+            : players.map((p) => (
                 <div
                   onClick={() => setSelect(p.userId._id)}
-                  key={p.userId._id}
+                  key={p.userId?._id}
                   className={`flex ${select === p.userId._id ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
                 >
                   <img
-                    className="rounded-full size-20 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all duration-200"
+                    className="rounded-full size-15 md:size-20 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all duration-200"
                     src={p.userId?.profilePic || "/avatar.png"}
-                  />
-                  <p>{p.userId?.fullname}</p>
+                  ></img>
+                  <p className="font-heading">{p.userId?.fullname}</p>
                 </div>
-              );
-            })
-          : players.map((p) => (
-              <div
-                onClick={() => setSelect(p.userId._id)}
-                key={p.userId?._id}
-                className={`flex ${select === p.userId._id ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
-              >
-                <img
-                  className="rounded-full size-20 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all duration-200"
-                  src={p.userId?.profilePic || "/avatar.png"}
-                ></img>
-                <p className="font-heading">{p.userId?.fullname}</p>
-              </div>
-            ))}
-      </div>
+              ))}
+        </div>
 
-      <div className="absolute bottom-0 bg-[#1E293B] p-6 rounded-xl w-[400px] ">
-        <form onSubmit={handleSubmit} className="flex items-center gap-6">
-          <input
-            type="number"
-            placeholder="Enter Amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="px-2 rounded-xl w-[280px] h-[40px] border-2 text-white font-retro"
-          />
-          <button type="submit" className="p-3 rounded-full bg-indigo-600">
-            <Send className="" />
-          </button>
-        </form>
+        <div className="fixed bottom-0 md:static md:mt-20  bg-[#1E293B] flex items-center justify-center p-6 rounded-xl w-[400px] ">
+          <form onSubmit={handleSubmit} className="flex items-center gap-6">
+            <input
+              type="number"
+              placeholder="Enter Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="px-2 rounded-xl w-[220px] md:w-[280px] h-[40px] border-2 text-white font-retro"
+            />
+            <button type="submit" className="p-3 rounded-full bg-indigo-600">
+              <Send className="" />
+            </button>
+          </form>
+        </div>
       </div>
-
       {open && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-40">
           <div className="bg-[#1E293B] p-6 rounded-xl w-[400px]">

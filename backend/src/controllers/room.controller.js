@@ -41,12 +41,16 @@ export const createRoomController = async (req, res) => {
       players: [player],
       gameStarted: false,
     });
-    io.to(roomId).emit("room_updated", room);
+    const populatedRoom = await roomModel
+      .findOne({ roomId })
+      .populate("players.userId", "fullname profilePic");
+
+    io.to(roomId).emit("room_updated", populatedRoom);
 
     res.status(201).json({
       message: "Room created",
-      roomId: room.roomId,
-      room,
+      roomId: populatedRoom.roomId,
+      room: populatedRoom,
     });
   } catch (error) {
     console.error("Error in create room controller", error);
@@ -103,7 +107,7 @@ export const joinRoomController = async (req, res) => {
 
     res.status(200).json({
       message: "Joined room",
-      room,
+      room: populatedRoom, // ✅ FIXED
     });
   } catch (error) {
     console.error("Error in join room controller", error);
@@ -121,8 +125,10 @@ export const getRoomController = async (req, res) => {
     if (!room) {
       return res.status(404).json({ message: "Room not found" });
     }
-
-    res.status(200).json({ room });
+    const populatedRoom = await roomModel
+      .findOne({ roomId: id })
+      .populate("players.userId", "fullname profilePic");
+    res.status(200).json({ room: populatedRoom });
   } catch (error) {
     console.error("Error in get room", error);
     res.status(500).json({ message: "Server error" });

@@ -27,19 +27,19 @@ const LoginPage = () => {
             placeholder="Username"
             value={form.username}
             onChange={(e) => setForm({ ...form, username: e.target.value })}
-            className="bg-[#1E293B] text-white px-6 w-100 py-3 rounded-lg outline-none focus:ring-2 focus:none "
+            className="bg-[#1E293B] text-white px-6  w-70 md:w-100 py-3 rounded-lg outline-none focus:ring-2 focus:none "
           />
           <input
             type="password"
             placeholder="Password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="bg-[#1E293B] text-white px-6 w-100 py-3 rounded-lg outline-none focus:ring-2 focus:none "
+            className="bg-[#1E293B] text-white px-6  w-70 md:w-100 py-3 rounded-lg outline-none focus:ring-2 focus:none "
           />
           <button
             type="submit"
             disabled={isLoggingIn}
-            className="mx-30 rounded-lg py-3 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 text-white font-heading cursor-pointer"
+            className="px-5 rounded-lg py-3 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 text-white font-heading cursor-pointer"
           >
             {isLoggingIn ? (
               <div className="flex gap-2 px-4">
