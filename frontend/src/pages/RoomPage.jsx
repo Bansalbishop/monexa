@@ -6,12 +6,14 @@ import { useAuthStore } from "../stores/useAuthStore";
 import { socket } from "../lib/socket";
 import { Check, Loader, X } from "lucide-react";
 import toast from "react-hot-toast";
+import ProfilePicModal from "../components/ProfilePicModal";
 
 const RoomPage = () => {
   const { id } = useParams();
   const [initialAmount, setInitialAmount] = useState("");
   const [bankBalance, setBankBalance] = useState("");
   const [isPlayer, setIsPlayer] = useState(true);
+  const [viewPic, setViewPic] = useState(null); // { src, name }
   const navigate = useNavigate();
 
   const { room, getRoom, startGame, listenToRoom, stopListening, isLoading } =
@@ -70,6 +72,15 @@ const RoomPage = () => {
     // Navigation is handled by the game_started socket event
   };
 
+  const handlePicClick = (player) => {
+    // Only open lightbox for OTHER players' pics
+    if (player.userId?._id?.toString() === authUser._id?.toString()) return;
+    setViewPic({
+      src: player.userId?.profilePic,
+      name: player.userId?.fullname,
+    });
+  };
+
   if (!room) {
     return (
       <div className="w-full min-h-[calc(100vh-64px)] bg-[#0F172A] flex items-center justify-center px-4 text-white">
@@ -91,7 +102,12 @@ const RoomPage = () => {
           <div key={p.userId?._id} className="flex flex-col items-center">
             <img
               src={p.userId?.profilePic}
-              className="size-23 rounded-full object-cover"
+              onClick={() => handlePicClick(p)}
+              className={`size-23 rounded-full object-cover ${
+                p.userId?._id?.toString() !== authUser._id?.toString()
+                  ? "cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all duration-200"
+                  : ""
+              }`}
             />
             <span className="font-heading text-white mt-2">
               {p.userId?.fullname}
@@ -157,6 +173,15 @@ const RoomPage = () => {
         </div>
       ) : (
         ""
+      )}
+
+      {/* Profile pic lightbox */}
+      {viewPic && (
+        <ProfilePicModal
+          src={viewPic.src}
+          name={viewPic.name}
+          onClose={() => setViewPic(null)}
+        />
       )}
     </div>
   );

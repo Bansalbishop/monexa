@@ -64,4 +64,23 @@ export const useAuthStore = create((set) => ({
       console.error("Error in logout ", error);
     }
   },
+  updateProfilePic: async (base64Image) => {
+    set({ isUpdatingProfile: true });
+    try {
+      await axiosInstance.put("/auth/changeprofile", {
+        profilePic: base64Image,
+      });
+      // Re-fetch user to get the new Cloudinary URL
+      const res = await axiosInstance.get("/auth/check");
+      set({ authUser: res.data });
+      toast.success("Profile picture updated!");
+    } catch (error) {
+      const msg =
+        error.response?.data?.message || "Failed to update profile picture";
+      toast.error(msg);
+      console.error("Error updating profile pic", error);
+    } finally {
+      set({ isUpdatingProfile: false });
+    }
+  },
 }));

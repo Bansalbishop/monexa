@@ -7,11 +7,13 @@ import { Bell, Loader, Send, X } from "lucide-react";
 import { useMemo } from "react";
 import { socket } from "../lib/socket.js";
 import toast from "react-hot-toast";
+import ProfilePicModal from "../components/ProfilePicModal";
 
 const GamePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [viewPic, setViewPic] = useState(null); // { src, name }
   const {
     room,
     getRoom,
@@ -77,6 +79,14 @@ const GamePage = () => {
 
     return () => socket.off("room_deleted", handleDisconnectFromRoom);
   }, [navigate]);
+
+  const handlePicClick = (e, player) => {
+    e.stopPropagation(); // Don't trigger the parent div's select onClick
+    setViewPic({
+      src: player.userId?.profilePic,
+      name: player.userId?.fullname,
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -269,8 +279,9 @@ const GamePage = () => {
                   className={`flex ${select === p.userId._id ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
                 >
                   <img
-                    className="rounded-full size-20"
+                    className="rounded-full size-20 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all duration-200"
                     src={p.userId?.profilePic || "/avatar.png"}
+                    onClick={(e) => handlePicClick(e, p)}
                   />
                   <p>{p.userId?.fullname}</p>
                 </div>
@@ -283,8 +294,9 @@ const GamePage = () => {
                 className={`flex ${select === p.userId._id ? "bg-blue-500/80" : ""}  rounded-2xl p-2 flex-col items-center`}
               >
                 <img
-                  className="rounded-full size-20"
+                  className="rounded-full size-20 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all duration-200"
                   src={p.userId?.profilePic || "/avatar.png"}
+                  onClick={(e) => handlePicClick(e, p)}
                 ></img>
                 <p className="font-heading">{p.userId?.fullname}</p>
               </div>
@@ -307,7 +319,7 @@ const GamePage = () => {
       </div>
 
       {open && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-40">
           <div className="bg-[#1E293B] p-6 rounded-xl w-[400px]">
             <div className="flex justify-between">
               <h2 className="font-retro">Transactions</h2>
@@ -354,6 +366,15 @@ const GamePage = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Profile pic lightbox */}
+      {viewPic && (
+        <ProfilePicModal
+          src={viewPic.src}
+          name={viewPic.name}
+          onClose={() => setViewPic(null)}
+        />
       )}
     </div>
   );
