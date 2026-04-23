@@ -214,9 +214,7 @@ const GamePage = () => {
               <div className="mt-6 flex justify-between items-center text-white">
                 <div>
                   <p className="text-xs opacity-70">Room ID</p>
-                  <p className="font-semibold">
-                    {room.roomId}
-                  </p>
+                  <p className="font-semibold">{room.roomId}</p>
                 </div>
 
                 <div>
@@ -281,7 +279,6 @@ const GamePage = () => {
                   <img
                     className="rounded-full size-20 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all duration-200"
                     src={p.userId?.profilePic || "/avatar.png"}
-                    onClick={(e) => handlePicClick(e, p)}
                   />
                   <p>{p.userId?.fullname}</p>
                 </div>
@@ -296,7 +293,6 @@ const GamePage = () => {
                 <img
                   className="rounded-full size-20 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all duration-200"
                   src={p.userId?.profilePic || "/avatar.png"}
-                  onClick={(e) => handlePicClick(e, p)}
                 ></img>
                 <p className="font-heading">{p.userId?.fullname}</p>
               </div>
@@ -323,10 +319,15 @@ const GamePage = () => {
           <div className="bg-[#1E293B] p-6 rounded-xl w-[400px]">
             <div className="flex justify-between">
               <h2 className="font-retro">Transactions</h2>
-              <X onClick={() => setOpen(false)} className="text-red-500 cursor-pointer" />
+              <X
+                onClick={() => setOpen(false)}
+                className="text-red-500 cursor-pointer"
+              />
             </div>
             {room.transactions.length === 0 ? (
-              <p className="text-gray-400 text-center py-6">No transactions yet</p>
+              <p className="text-gray-400 text-center py-6">
+                No transactions yet
+              </p>
             ) : (
               [...room.transactions].reverse().map((t) => {
                 const isSender =
