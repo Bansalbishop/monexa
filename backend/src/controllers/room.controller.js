@@ -72,10 +72,6 @@ export const joinRoomController = async (req, res) => {
       return res.status(404).json({ message: "Room not found" });
     }
 
-    if (room.gameStarted) {
-      return res.status(400).json({ message: "Game already started" });
-    }
-
     const alreadyJoined = room.players.find(
       (p) => p.userId.toString() === req.user._id.toString(),
     );
