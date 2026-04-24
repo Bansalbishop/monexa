@@ -53,7 +53,13 @@ export const useRoomStore = create((set) => ({
       });
 
       set({ room });
-      toast.success(`Joined room ${id}!`);
+
+      // Show different toast for reconnection vs new join
+      if (res.data.message === "Reconnected to room") {
+        toast.success(`Reconnected to room ${id}!`, { icon: "🔄" });
+      } else {
+        toast.success(`Joined room ${id}!`);
+      }
       return id;
     } catch (error) {
       const msg =
@@ -65,16 +71,41 @@ export const useRoomStore = create((set) => ({
     }
   },
 
+  // Rejoin an existing room (used after page refresh / socket reconnect)
+  rejoinRoom: async (id) => {
+    try {
+      const res = await axiosInstance.post(`/room/${id}/rejoin`);
+      const room = res.data.room;
+      const user = useAuthStore.getState().authUser;
+
+      if (user) {
+        socket.emit("join_room", {
+          roomId: id,
+          userId: user._id,
+        });
+      }
+
+      set({ room });
+      return room;
+    } catch (error) {
+      // Silently fail — getRoom will handle the fallback
+      console.error("Rejoin error (may be expected)", error);
+      return null;
+    }
+  },
+
   getRoom: async (id) => {
     try {
       set({ isLoading: true });
       const res = await axiosInstance.get(`/room/${id}`);
       set({ room: res.data.room });
+      return res.data.room;
     } catch (error) {
       const msg =
         error.response?.data?.message || "Failed to load room";
       toast.error(msg);
       console.error("get Room Error", error);
+      return null;
     } finally {
       set({ isLoading: false });
     }
@@ -108,6 +139,7 @@ export const useRoomStore = create((set) => ({
     socket.off("room_updated");
     socket.off("player_joined");
     socket.off("player_left");
+    socket.off("player_reconnected");
 
     socket.on("room_updated", (updatedRoom) => {
       set((state) => {
@@ -134,12 +166,19 @@ export const useRoomStore = create((set) => ({
         },
       });
     });
+
+    socket.on("player_reconnected", ({ name }) => {
+      toast.success(`${name} reconnected!`, {
+        icon: "🔄",
+      });
+    });
   },
 
   stopListening: () => {
     socket.off("room_updated");
     socket.off("player_joined");
     socket.off("player_left");
+    socket.off("player_reconnected");
   },
 
   transfer: async (roomId, data) => {

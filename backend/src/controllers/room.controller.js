@@ -77,7 +77,14 @@ export const joinRoomController = async (req, res) => {
     );
 
     if (alreadyJoined) {
-      return res.status(400).json({ message: "Already in room" });
+      // Player is reconnecting after refresh — return room data instead of error
+      const populatedRoom = await roomModel
+        .findOne({ roomId })
+        .populate("players.userId", "fullname profilePic");
+      return res.status(200).json({
+        message: "Reconnected to room",
+        room: populatedRoom,
+      });
     }
 
     const user = await userModel.findById(req.user._id);
@@ -128,6 +135,36 @@ export const getRoomController = async (req, res) => {
   } catch (error) {
     console.error("Error in get room", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const rejoinRoomController = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const room = await roomModel
+      .findOne({ roomId: id })
+      .populate("players.userId", "fullname profilePic");
+
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    const isPlayerInRoom = room.players.find(
+      (p) => p.userId?._id?.toString() === req.user._id.toString(),
+    );
+
+    if (!isPlayerInRoom) {
+      return res.status(403).json({ message: "You are not in this room" });
+    }
+
+    return res.status(200).json({
+      message: "Rejoined room",
+      room,
+    });
+  } catch (error) {
+    console.error("Error in rejoinRoomController", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 

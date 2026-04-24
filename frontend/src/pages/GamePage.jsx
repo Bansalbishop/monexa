@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRoomStore } from "../stores/useRoomStore";
@@ -17,6 +17,7 @@ const GamePage = () => {
   const {
     room,
     getRoom,
+    rejoinRoom,
     transfer,
     transferAll,
     bankTransfer,
@@ -51,7 +52,33 @@ const GamePage = () => {
     (p) => p.userId?._id?.toString() === authUser._id?.toString(),
   );
 
-  // Join socket room and listen for updates
+  // ─── Reconnection helper ───
+  const handleReconnect = useCallback(async () => {
+    if (!authUser || !id) return;
+
+    // Re-join the socket room
+    socket.emit("join_room", {
+      roomId: id,
+      userId: authUser._id,
+    });
+
+    // Re-fetch fresh room state from DB
+    const roomData = await getRoom(id);
+
+    // If room no longer exists, redirect home
+    if (!roomData) {
+      toast.error("Room no longer exists");
+      navigate("/");
+      return;
+    }
+
+    // If game hasn't started yet, redirect to lobby
+    if (!roomData.gameStarted) {
+      navigate(`/room/${id}`);
+    }
+  }, [id, authUser, getRoom, navigate]);
+
+  // Join socket room on mount
   useEffect(() => {
     if (!authUser || !id) return;
 
@@ -61,12 +88,32 @@ const GamePage = () => {
     });
   }, [id, authUser]);
 
+  // Fetch room data and listen for real-time updates
   useEffect(() => {
     getRoom(id);
     listenToRoom();
 
     return () => stopListening();
   }, [id]);
+
+  // ─── Handle socket reconnection (after drop/refresh) ───
+  const hasConnectedOnce = useRef(false);
+
+  useEffect(() => {
+    const onReconnect = () => {
+      // Skip the initial connect — only handle actual reconnections
+      if (!hasConnectedOnce.current) {
+        hasConnectedOnce.current = true;
+        return;
+      }
+      console.log("Socket reconnected — re-joining room");
+      handleReconnect();
+    };
+
+    socket.on("connect", onReconnect);
+
+    return () => socket.off("connect", onReconnect);
+  }, [handleReconnect]);
 
   // If room gets deleted or player is kicked
   useEffect(() => {
@@ -315,9 +362,9 @@ const GamePage = () => {
         </div>
       </div>
       {open && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-40">
-          <div className="bg-[#1E293B] p-6 rounded-xl w-[400px]">
-            <div className="flex justify-between">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-40 p-4">
+          <div className="bg-[#1E293B] p-6 rounded-xl w-[400px] max-h-[80vh] flex flex-col">
+            <div className="flex justify-between mb-3">
               <h2 className="font-retro">Transactions</h2>
               <X
                 onClick={() => setOpen(false)}
@@ -329,7 +376,8 @@ const GamePage = () => {
                 No transactions yet
               </p>
             ) : (
-              [...room.transactions].reverse().map((t) => {
+              <div className="overflow-y-auto flex-1 scrollbar-hide">
+              {[...room.transactions].reverse().map((t) => {
                 const isSender =
                   t.senderId?.toString() === authUser._id?.toString();
 
@@ -364,6 +412,8 @@ const GamePage = () => {
                   </div>
                 );
               })
+              }
+              </div>
             )}
           </div>
         </div>

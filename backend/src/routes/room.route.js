@@ -6,6 +6,7 @@ import {
   getRoomController,
   joinRoomController,
   payCreditController,
+  rejoinRoomController,
   startGameController,
   transferAllController,
   transferController,
@@ -17,6 +18,7 @@ const router = express.Router();
 router.post("/create", protectRoute, createRoomController);
 router.post("/join", protectRoute, joinRoomController);
 router.post("/:id/start", protectRoute, startGameController);
+router.post("/:id/rejoin", protectRoute, rejoinRoomController);
 router.get("/:id", protectRoute, getRoomController);
 
 router.post("/:id/transfer", protectRoute, transferController);
