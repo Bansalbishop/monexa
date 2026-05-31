@@ -153,12 +153,6 @@ const GamePage = () => {
       return;
     }
 
-    const amountToSend = Number.isInteger(parsed) ? parsed : Math.floor(parsed);
-    if (amountToSend <= 0) {
-      toast.error("Amount too small after flooring");
-      return;
-    }
-
     if (!select) {
       toast.error("Select a recipient first");
       return;
@@ -168,36 +162,36 @@ const GamePage = () => {
       if (select === "all") {
         await transferAll(id, {
           fromId: authUser._id,
-          amount: amountToSend,
+          amount: parsed,
         });
       } else if (select === "tobank") {
         await bankTransfer(id, {
           from: authUser._id,
           to: "bank",
-          amount: amountToSend,
+          amount: parsed,
         });
       } else if (!playerMode) {
         await bankTransfer(id, {
           from: "bank",
           to: select,
-          amount: amountToSend,
+          amount: parsed,
         });
       } else if (select === "givetocard") {
         await payCredit(id, {
           fromId: authUser._id,
-          amount: amountToSend,
+          amount: parsed,
         });
       } else if (select === "takefromcard") {
         await useCredit(id, {
           toId: authUser._id,
-          amount: amountToSend,
+          amount: parsed,
         });
       } else {
         // player to player
         await transfer(id, {
           fromId: authUser._id,
           toId: select,
-          amount: amountToSend,
+          amount: parsed,
         });
       }
 
