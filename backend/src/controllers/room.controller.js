@@ -270,6 +270,7 @@ export const transferController = async (req, res) => {
     }
 
     if (isDecimalAmount(parsedAmount)) {
+<<<<<<< HEAD
       const floored = Math.floor(parsedAmount);
 
       if (!floored || floored <= 0) {
@@ -293,6 +294,9 @@ export const transferController = async (req, res) => {
         amount: floored,
       });
 
+=======
+      applyDecimalPenalty(sender);
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
       await room.save();
 
       const populatedRoom = await roomModel
@@ -301,8 +305,13 @@ export const transferController = async (req, res) => {
 
       io.to(id).emit("room_updated", populatedRoom);
       return res.status(200).json({
+<<<<<<< HEAD
         message: `Decimal amount floored to ${floored} and 2000 charged`,
         room: populatedRoom,
+=======
+        message: "Decimal amount penalty applied",
+        silent: true,
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
       });
     }
 
@@ -361,6 +370,7 @@ export const transferAllController = async (req, res) => {
     }
 
     if (isDecimalAmount(parsedAmount)) {
+<<<<<<< HEAD
       const floored = Math.floor(parsedAmount);
 
       if (!floored || floored <= 0) {
@@ -394,6 +404,9 @@ export const transferAllController = async (req, res) => {
         amount: floored,
       });
 
+=======
+      applyDecimalPenalty(sender);
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
       await room.save();
 
       const populatedRoom = await roomModel
@@ -402,8 +415,13 @@ export const transferAllController = async (req, res) => {
 
       io.to(id).emit("room_updated", populatedRoom);
       return res.status(200).json({
+<<<<<<< HEAD
         message: `Decimal amount floored to ${floored} per player and 2000 charged`,
         room: populatedRoom,
+=======
+        message: "Decimal amount penalty applied",
+        silent: true,
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
       });
     }
 
@@ -475,6 +493,7 @@ export const payCreditController = async (req, res) => {
     }
 
     if (isDecimalAmount(parsedAmount)) {
+<<<<<<< HEAD
       const floored = Math.floor(parsedAmount);
 
       if (!floored || floored <= 0) {
@@ -496,6 +515,9 @@ export const payCreditController = async (req, res) => {
       player.balance -= totalDebit;
       player.creditUsed -= floored;
 
+=======
+      applyDecimalPenalty(player);
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
       await room.save();
 
       const populatedRoom = await roomModel
@@ -504,6 +526,7 @@ export const payCreditController = async (req, res) => {
 
       io.to(id).emit("room_updated", populatedRoom);
       return res.status(200).json({
+<<<<<<< HEAD
         message: `Decimal amount floored to ${floored} and 2000 charged`,
         room: populatedRoom,
       });
@@ -517,6 +540,25 @@ export const payCreditController = async (req, res) => {
       return res.status(400).json({ message: "Repay exceeds credit used" });
     }
 
+=======
+        message: "Decimal amount penalty applied",
+        silent: true,
+      });
+    }
+
+    if (player.balance < parsedAmount) {
+      return res.status(400).json({
+        message: "Insufficient balance",
+      });
+    }
+
+    if (player.creditUsed < parsedAmount) {
+      return res.status(400).json({
+        message: "Repay exceeds credit used",
+      });
+    }
+
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
     player.balance -= parsedAmount;
     player.creditUsed -= parsedAmount;
 
@@ -564,6 +606,7 @@ export const useCreditController = async (req, res) => {
     }
 
     if (isDecimalAmount(parsedAmount)) {
+<<<<<<< HEAD
       const floored = Math.floor(parsedAmount);
 
       if (!floored || floored <= 0) {
@@ -583,6 +626,9 @@ export const useCreditController = async (req, res) => {
       player.balance += floored;
       player.creditUsed += floored;
 
+=======
+      applyDecimalPenalty(player);
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
       await room.save();
 
       const populatedRoom = await roomModel
@@ -591,6 +637,7 @@ export const useCreditController = async (req, res) => {
 
       io.to(id).emit("room_updated", populatedRoom);
       return res.status(200).json({
+<<<<<<< HEAD
         message: `Decimal amount floored to ${floored} and 2000 charged`,
         room: populatedRoom,
       });
@@ -602,6 +649,19 @@ export const useCreditController = async (req, res) => {
         .json({ message: "Insufficient balance in credit card" });
     }
 
+=======
+        message: "Decimal amount penalty applied",
+        silent: true,
+      });
+    }
+
+    if (player.creditUsed + parsedAmount > 10000) {
+      return res.status(400).json({
+        message: "Insufficient balance in credit card",
+      });
+    }
+
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
     player.balance += parsedAmount;
     player.creditUsed += parsedAmount;
 
@@ -698,6 +758,7 @@ export const bankTransferController = async (req, res) => {
       }
 
       if (isDecimalAmount(parsedAmount)) {
+<<<<<<< HEAD
         const floored = Math.floor(parsedAmount);
 
         if (!floored || floored <= 0) {
@@ -721,6 +782,9 @@ export const bankTransferController = async (req, res) => {
           amount: floored,
         });
 
+=======
+        applyDecimalPenalty(sender);
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
         await room.save();
 
         const populatedRoom = await roomModel
@@ -729,8 +793,13 @@ export const bankTransferController = async (req, res) => {
 
         io.to(id).emit("room_updated", populatedRoom);
         return res.status(200).json({
+<<<<<<< HEAD
           message: `Decimal amount floored to ${floored} and 2000 charged`,
           room: populatedRoom,
+=======
+          message: "Decimal amount penalty applied",
+          silent: true,
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
         });
       }
 
@@ -753,6 +822,7 @@ export const bankTransferController = async (req, res) => {
         return res.status(404).json({ message: "Player not found" });
       }
 
+<<<<<<< HEAD
       const amountToUse = isDecimalAmount(parsedAmount)
         ? Math.floor(parsedAmount)
         : parsedAmount;
@@ -767,11 +837,23 @@ export const bankTransferController = async (req, res) => {
 
       room.bankBalance -= amountToUse;
       receiver.balance += amountToUse;
+=======
+      if (room.bankBalance < parsedAmount) {
+        return res.status(400).json({ message: "Insufficient bank balance" });
+      }
+
+      room.bankBalance -= parsedAmount;
+      receiver.balance += parsedAmount;
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
 
       room.transactions.push({
         senderId: null, // BANK
         receiverId: receiver.userId,
+<<<<<<< HEAD
         amount: amountToUse,
+=======
+        amount: parsedAmount,
+>>>>>>> 6a51cfb04ba06889557511a1fe9d8c3674732447
       });
     }
 
