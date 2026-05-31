@@ -23,6 +23,7 @@ const GamePage = () => {
     bankTransfer,
     useCredit,
     payCredit,
+    leaveRoom,
     listenToRoom,
     stopListening,
   } = useRoomStore();
@@ -127,6 +128,14 @@ const GamePage = () => {
     return () => socket.off("room_deleted", handleDisconnectFromRoom);
   }, [navigate]);
 
+  const handleLeaveRoom = async () => {
+    const success = await leaveRoom(id);
+    if (success) {
+      stopListening();
+      navigate("/");
+    }
+  };
+
   const handlePicClick = (e, player) => {
     e.stopPropagation(); // Don't trigger the parent div's select onClick
     setViewPic({
@@ -228,6 +237,12 @@ const GamePage = () => {
             className={`px-5 py-1 border-2 rounded-2xl  text-white `}
           >
             <Bell />
+          </button>
+          <button
+            onClick={handleLeaveRoom}
+            className="px-5 py-1 border-2 rounded-2xl bg-red-600 text-white hover:bg-red-700"
+          >
+            Leave Room
           </button>
         </div>
         <div className="flex flex-col gap-2  md:gap-12 items-center">
@@ -377,42 +392,41 @@ const GamePage = () => {
               </p>
             ) : (
               <div className="overflow-y-auto flex-1 scrollbar-hide">
-              {[...room.transactions].reverse().map((t) => {
-                const isSender =
-                  t.senderId?.toString() === authUser._id?.toString();
+                {[...room.transactions].reverse().map((t) => {
+                  const isSender =
+                    t.senderId?.toString() === authUser._id?.toString();
 
-                const isReceiver =
-                  t.receiverId?.toString() === authUser._id?.toString();
+                  const isReceiver =
+                    t.receiverId?.toString() === authUser._id?.toString();
 
-                let bgClass = "bg-gray-700/40"; // default
+                  let bgClass = "bg-gray-700/40"; // default
 
-                if (isSender) bgClass = "bg-red-500/20";
-                else if (isReceiver) bgClass = "bg-green-500/20";
+                  if (isSender) bgClass = "bg-red-500/20";
+                  else if (isReceiver) bgClass = "bg-green-500/20";
 
-                return (
-                  <div
-                    key={t._id}
-                    className={`px-4 py-2 rounded-lg ${bgClass} flex justify-between items-center my-3`}
-                  >
-                    <span className="text-sm text-white">
-                      {getName(t.senderId)} → {getName(t.receiverId)}
-                    </span>
-
-                    <span
-                      className={`font-semibold ${
-                        isSender
-                          ? "text-red-400"
-                          : isReceiver
-                            ? "text-green-400"
-                            : "text-gray-300"
-                      }`}
+                  return (
+                    <div
+                      key={t._id}
+                      className={`px-4 py-2 rounded-lg ${bgClass} flex justify-between items-center my-3`}
                     >
-                      ₹{t.amount}
-                    </span>
-                  </div>
-                );
-              })
-              }
+                      <span className="text-sm text-white">
+                        {getName(t.senderId)} → {getName(t.receiverId)}
+                      </span>
+
+                      <span
+                        className={`font-semibold ${
+                          isSender
+                            ? "text-red-400"
+                            : isReceiver
+                              ? "text-green-400"
+                              : "text-gray-300"
+                        }`}
+                      >
+                        ₹{t.amount}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

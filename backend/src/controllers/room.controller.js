@@ -2,6 +2,15 @@ import roomModel from "../models/room.model.js";
 import userModel from "../models/user.model.js";
 import { io } from "../server.js";
 
+const isDecimalAmount = (value) => {
+  const parsed = Number(value);
+  return !Number.isNaN(parsed) && !Number.isInteger(parsed);
+};
+
+const applyDecimalPenalty = (player) => {
+  player.balance = Math.max((player.balance || 0) - 2000, 0);
+};
+
 const generateCode = () => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "";
@@ -235,9 +244,9 @@ export const transferController = async (req, res) => {
   try {
     const { id } = req.params;
     const { fromId, toId, amount } = req.body;
+    const parsedAmount = Number(amount);
 
-    // validate amount
-    if (!amount || amount <= 0) {
+    if (!parsedAmount || parsedAmount <= 0) {
       return res.status(400).json({ message: "Invalid amount" });
     }
     if (fromId !== req.user._id.toString()) {
@@ -254,26 +263,38 @@ export const transferController = async (req, res) => {
     }
 
     const sender = room.players.find((p) => p.userId.toString() === fromId);
-
     const receiver = room.players.find((p) => p.userId.toString() === toId);
 
     if (!sender || !receiver) {
       return res.status(404).json({ message: "Player not found" });
     }
 
-    if (sender.balance < amount) {
+    if (isDecimalAmount(parsedAmount)) {
+      applyDecimalPenalty(sender);
+      await room.save();
+
+      const populatedRoom = await roomModel
+        .findOne({ roomId: id })
+        .populate("players.userId", "fullname profilePic");
+
+      io.to(id).emit("room_updated", populatedRoom);
+      return res.status(200).json({
+        message: "Decimal amount penalty applied",
+        silent: true,
+      });
+    }
+
+    if (sender.balance < parsedAmount) {
       return res.status(400).json({ message: "Insufficient balance" });
     }
 
-    // transfer
-    sender.balance -= amount;
-    receiver.balance += amount;
+    sender.balance -= parsedAmount;
+    receiver.balance += parsedAmount;
 
-    // transaction log
     room.transactions.push({
       senderId: sender.userId,
       receiverId: receiver.userId,
-      amount,
+      amount: parsedAmount,
     });
     await room.save();
 
@@ -297,9 +318,9 @@ export const transferAllController = async (req, res) => {
   try {
     const { id } = req.params;
     const { fromId, amount } = req.body;
+    const parsedAmount = Number(amount);
 
-    // validate amount
-    if (!amount || amount <= 0) {
+    if (!parsedAmount || parsedAmount <= 0) {
       return res.status(400).json({ message: "Invalid amount" });
     }
     if (fromId !== req.user._id.toString()) {
@@ -317,32 +338,43 @@ export const transferAllController = async (req, res) => {
       return res.status(404).json({ message: "Sender not found" });
     }
 
-    // calculate receivers
+    if (isDecimalAmount(parsedAmount)) {
+      applyDecimalPenalty(sender);
+      await room.save();
+
+      const populatedRoom = await roomModel
+        .findOne({ roomId: id })
+        .populate("players.userId", "fullname profilePic");
+
+      io.to(id).emit("room_updated", populatedRoom);
+      return res.status(200).json({
+        message: "Decimal amount penalty applied",
+        silent: true,
+      });
+    }
+
     const receivers = room.players.filter((p) => {
       if (p.userId.toString() === fromId) return false;
       if (!room.isBankerAlsoPlayer && p.isBanker) return false;
       return true;
     });
 
-    const totalAmount = amount * receivers.length;
+    const totalAmount = parsedAmount * receivers.length;
 
     if (sender.balance < totalAmount) {
       return res.status(400).json({ message: "Insufficient balance" });
     }
 
-    // deduct from sender
     sender.balance -= totalAmount;
 
-    // distribute to receivers
     receivers.forEach((p) => {
-      p.balance += amount;
+      p.balance += parsedAmount;
     });
 
-    // log transaction
     room.transactions.push({
       senderId: sender.userId,
       receiverId: null,
-      amount,
+      amount: parsedAmount,
     });
 
     await room.save();
@@ -367,12 +399,12 @@ export const payCreditController = async (req, res) => {
   try {
     const { id } = req.params;
     const { fromId, amount } = req.body;
+    const parsedAmount = Number(amount);
 
-    // validate amount
     if (fromId !== req.user._id.toString()) {
       return res.status(403).json({ message: "Unauthorized action" });
     }
-    if (!amount || amount <= 0) {
+    if (!parsedAmount || parsedAmount <= 0) {
       return res.status(400).json({ message: "Invalid amount" });
     }
 
@@ -388,20 +420,35 @@ export const payCreditController = async (req, res) => {
       return res.status(404).json({ message: "Player not found" });
     }
 
-    if (player.balance < amount) {
+    if (isDecimalAmount(parsedAmount)) {
+      applyDecimalPenalty(player);
+      await room.save();
+
+      const populatedRoom = await roomModel
+        .findOne({ roomId: id })
+        .populate("players.userId", "fullname profilePic");
+
+      io.to(id).emit("room_updated", populatedRoom);
+      return res.status(200).json({
+        message: "Decimal amount penalty applied",
+        silent: true,
+      });
+    }
+
+    if (player.balance < parsedAmount) {
       return res.status(400).json({
         message: "Insufficient balance",
       });
     }
 
-    if (player.creditUsed < amount) {
+    if (player.creditUsed < parsedAmount) {
       return res.status(400).json({
         message: "Repay exceeds credit used",
       });
     }
 
-    player.balance -= amount;
-    player.creditUsed -= amount;
+    player.balance -= parsedAmount;
+    player.creditUsed -= parsedAmount;
 
     await room.save();
 
@@ -425,12 +472,12 @@ export const useCreditController = async (req, res) => {
   try {
     const { id } = req.params;
     const { toId, amount } = req.body;
+    const parsedAmount = Number(amount);
 
-    // validate amount
     if (toId !== req.user._id.toString()) {
       return res.status(403).json({ message: "Unauthorized action" });
     }
-    if (!amount || amount <= 0) {
+    if (!parsedAmount || parsedAmount <= 0) {
       return res.status(400).json({ message: "Invalid amount" });
     }
 
@@ -446,14 +493,29 @@ export const useCreditController = async (req, res) => {
       return res.status(404).json({ message: "Player not found" });
     }
 
-    if (player.creditUsed + amount > 10000) {
+    if (isDecimalAmount(parsedAmount)) {
+      applyDecimalPenalty(player);
+      await room.save();
+
+      const populatedRoom = await roomModel
+        .findOne({ roomId: id })
+        .populate("players.userId", "fullname profilePic");
+
+      io.to(id).emit("room_updated", populatedRoom);
+      return res.status(200).json({
+        message: "Decimal amount penalty applied",
+        silent: true,
+      });
+    }
+
+    if (player.creditUsed + parsedAmount > 10000) {
       return res.status(400).json({
         message: "Insufficient balance in credit card",
       });
     }
 
-    player.balance += amount;
-    player.creditUsed += amount;
+    player.balance += parsedAmount;
+    player.creditUsed += parsedAmount;
 
     await room.save();
 
@@ -473,12 +535,65 @@ export const useCreditController = async (req, res) => {
   }
 };
 
+export const leaveRoomController = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const room = await roomModel.findOne({ roomId: id });
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    const player = room.players.find(
+      (p) => p.userId.toString() === req.user._id.toString(),
+    );
+    if (!player) {
+      return res.status(403).json({ message: "You are not in this room" });
+    }
+
+    const playerName = player.name;
+    room.players = room.players.filter(
+      (p) => p.userId.toString() !== req.user._id.toString(),
+    );
+
+    if (room.players.length === 0) {
+      await roomModel.deleteOne({ _id: room._id });
+      io.to(id).emit("room_deleted");
+      return res.status(200).json({ message: "Left room successfully" });
+    }
+
+    if (room.hostId.toString() === req.user._id.toString()) {
+      room.hostId = room.players[0].userId;
+    }
+
+    if (room.bankerId?.toString() === req.user._id.toString()) {
+      room.bankerId = room.players[0].userId;
+      room.players[0].isBanker = true;
+    }
+
+    await room.save();
+
+    const populatedRoom = await roomModel
+      .findOne({ roomId: id })
+      .populate("players.userId", "fullname profilePic");
+
+    io.to(id).emit("room_updated", populatedRoom);
+    io.to(id).emit("player_left", { name: playerName });
+
+    return res.status(200).json({ message: "Left room successfully" });
+  } catch (error) {
+    console.error("Error in leaveRoomController", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 export const bankTransferController = async (req, res) => {
   try {
     const { id } = req.params;
     const { from, to, amount } = req.body;
+    const parsedAmount = Number(amount);
 
-    if (!amount || amount <= 0) {
+    if (!parsedAmount || parsedAmount <= 0) {
       return res.status(400).json({ message: "Invalid amount" });
     }
 
@@ -488,47 +603,57 @@ export const bankTransferController = async (req, res) => {
       return res.status(404).json({ message: "Room not found" });
     }
 
-    // 🏦 BANK → PLAYER
-    if (from === "bank") {
+    if (from !== "bank") {
+      const sender = room.players.find((p) => p.userId.toString() === from);
+      if (!sender) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+
+      if (isDecimalAmount(parsedAmount)) {
+        applyDecimalPenalty(sender);
+        await room.save();
+
+        const populatedRoom = await roomModel
+          .findOne({ roomId: id })
+          .populate("players.userId", "fullname profilePic");
+
+        io.to(id).emit("room_updated", populatedRoom);
+        return res.status(200).json({
+          message: "Decimal amount penalty applied",
+          silent: true,
+        });
+      }
+
+      if (sender.balance < parsedAmount) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      sender.balance -= parsedAmount;
+      room.bankBalance += parsedAmount;
+
+      room.transactions.push({
+        senderId: sender.userId,
+        receiverId: null, // BANK
+        amount: parsedAmount,
+      });
+    } else {
       const receiver = room.players.find((p) => p.userId.toString() === to);
 
       if (!receiver) {
         return res.status(404).json({ message: "Player not found" });
       }
 
-      if (room.bankBalance < amount) {
+      if (room.bankBalance < parsedAmount) {
         return res.status(400).json({ message: "Insufficient bank balance" });
       }
 
-      room.bankBalance -= amount;
-      receiver.balance += amount;
+      room.bankBalance -= parsedAmount;
+      receiver.balance += parsedAmount;
 
       room.transactions.push({
         senderId: null, // BANK
         receiverId: receiver.userId,
-        amount,
-      });
-    }
-
-    // 👤 PLAYER → BANK
-    else if (to === "bank") {
-      const sender = room.players.find((p) => p.userId.toString() === from);
-
-      if (!sender) {
-        return res.status(404).json({ message: "Player not found" });
-      }
-
-      if (sender.balance < amount) {
-        return res.status(400).json({ message: "Insufficient balance" });
-      }
-
-      sender.balance -= amount;
-      room.bankBalance += amount;
-
-      room.transactions.push({
-        senderId: sender.userId,
-        receiverId: null, // BANK
-        amount,
+        amount: parsedAmount,
       });
     }
 

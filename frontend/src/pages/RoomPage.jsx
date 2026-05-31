@@ -16,8 +16,15 @@ const RoomPage = () => {
   const [viewPic, setViewPic] = useState(null); // { src, name }
   const navigate = useNavigate();
 
-  const { room, getRoom, startGame, listenToRoom, stopListening, isLoading } =
-    useRoomStore();
+  const {
+    room,
+    getRoom,
+    startGame,
+    listenToRoom,
+    stopListening,
+    leaveRoom,
+    isLoading,
+  } = useRoomStore();
   const { authUser } = useAuthStore();
 
   // ─── Reconnection helper ───
@@ -104,6 +111,14 @@ const RoomPage = () => {
     return () => socket.off("connect", onReconnect);
   }, [handleReconnect]);
 
+  const handleLeaveRoom = async () => {
+    const success = await leaveRoom(id);
+    if (success) {
+      stopListening();
+      navigate("/");
+    }
+  };
+
   const handleStartGame = async (e) => {
     e.preventDefault();
 
@@ -145,11 +160,19 @@ const RoomPage = () => {
 
   return (
     <div className="w-full relative border-t-2 min-h-[calc(100vh-64px)] bg-[#0F172A] flex flex-col items-center px-4 ">
-      <div className="w-full h-auto flex items-center justify-between mb-4">
-        <h1 className="font-retro font-bold text-white mt-5 mb-2   ">
-          Room: {room.roomId}
-        </h1>
-        <p className="text-gray-400 ">Players: {room.players.length}</p>
+      <div className="w-full h-auto flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-3">
+        <div>
+          <h1 className="font-retro font-bold text-white mt-5 mb-2">
+            Room: {room.roomId}
+          </h1>
+          <p className="text-gray-400">Players: {room.players.length}</p>
+        </div>
+        <button
+          onClick={handleLeaveRoom}
+          className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold"
+        >
+          Leave Room
+        </button>
       </div>
       <div className=" w-full h-[90vw] md:h-[60vw] lg:h-[20vw] overflow-y-scroll scrollbar-hide  grid grid-cols-3  gap-3">
         {room.players.map((p) => (
